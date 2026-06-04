@@ -1,161 +1,177 @@
-#include <stdio.h>
-#include <string.h>
-#define MAX_PROCESSES 100
+#include<stdio.h>
 
-typedef struct {
-    int process_id;
-    int arrival_time;
-    int burst_time;
-    int remaining_time;
-    int type;
-    int completion_time;
-    int waiting_time;
-    int turnaround_time;
-    int started;
-    int start_time;
-} Process;
+void multilevel_queue(int n,int at[],int bt[],int q[],int tq)
+{
+    int rem[n],ct[n],tat[n],wt[n],rt[n];
+    int started[n],in_queue[n],rr[1000];
+    int front=0,rear=0,time=0,completed=0;
 
-typedef struct {
-    int items[MAX_PROCESSES];
-    int front, rear;
-} Queue;
-
-void initQueue(Queue* q) {
-    q->front = 0;
-    q->rear = -1;
-}
-
-int isEmpty(Queue* q) {
-    return q->rear < q->front;
-}
-
-void enqueue(Queue* q, int value) {
-    if (q->rear < MAX_PROCESSES - 1) {
-        q->rear++;
-        q->items[q->rear] = value;
-    }
-}
-
-int dequeue(Queue* q) {
-    if (!isEmpty(q)) {
-        int val = q->items[q->front];
-        q->front++;
-        return val;
-    }
-    return -1;
-}
-
-int compareArrival(const void* a, const void* b) {
-    Process* p1 = (Process*)a;
-    Process* p2 = (Process*)b;
-    if (p1->arrival_time < p2->arrival_time)
-        return -1;
-    else if (p1->arrival_time > p2->arrival_time)
-        return 1;
-    else
-        return 0;
-}
-
-int main() {
-    int n;
-    Process processes[MAX_PROCESSES];
-
-    printf("Enter number of processes: ");
-    scanf("%d", &n);
-
-    for (int i = 0; i < n; i++) {
-        printf("\nProcess %d\n", i);
-        printf("Enter arrival time: ");
-        scanf("%d", &processes[i].arrival_time);
-        printf("Enter burst time: ");
-        scanf("%d", &processes[i].burst_time);
-        printf("Enter type (0 = System, 1 = User): ");
-        scanf("%d", &processes[i].type);
-
-        processes[i].process_id = i;
-        processes[i].remaining_time = processes[i].burst_time;
-        processes[i].completion_time = 0;
-        processes[i].waiting_time = 0;
-        processes[i].turnaround_time = 0;
-        processes[i].started = 0;
-        processes[i].start_time = -1;
+    for(int i=0;i<n;i++)
+    {
+        rem[i]=bt[i];
+        started[i]=0;
+        in_queue[i]=0;
     }
 
-    qsort(processes, n, sizeof(Process), compareArrival);
-
-    Queue systemQueue, userQueue;
-    initQueue(&systemQueue);
-    initQueue(&userQueue);
-
-    int completed = 0;
-    int current_time = 0;
-    int i = 0;
-    Process* current_process = NULL;
-
-    while (completed < n) {
-        while (i < n && processes[i].arrival_time <= current_time) {
-            if (processes[i].type == 0)
-                enqueue(&systemQueue, i);
-            else
-                enqueue(&userQueue, i);
-            i++;
-        }
-
-        if (current_process != NULL) {
-            if (current_process->type == 1 && !isEmpty(&systemQueue)) {
-                enqueue(&userQueue, current_process - processes);
-                current_process = NULL;
+    while(completed<n)
+    {
+        for(int i=0;i<n;i++)
+        {
+            if(q[i]==1 && at[i]<=time && rem[i]>0 && in_queue[i]==0)
+            {
+                rr[rear]=i;
+                rear++;
+                in_queue[i]=1;
             }
         }
 
-        if (current_process == NULL) {
-            if (!isEmpty(&systemQueue)) {
-                int idx = dequeue(&systemQueue);
-                current_process = &processes[idx];
-            } else if (!isEmpty(&userQueue)) {
-                int idx = dequeue(&userQueue);
-                current_process = &processes[idx];
-            } else {
-                current_time++;
+        if(front<rear)
+        {
+            int idx=rr[front];
+            front++;
+            in_queue[idx]=0;
+
+            if(started[idx]==0)
+            {
+                rt[idx]=time-at[idx];
+                started[idx]=1;
+            }
+
+            int run;
+
+            if(rem[idx]>tq)
+                run=tq;
+            else
+                run=rem[idx];
+
+            for(int i=0;i<run;i++)
+            {
+                time++;
+                rem[idx]--;
+
+                for(int j=0;j<n;j++)
+                {
+                    if(j!=idx && q[j]==1 && at[j]<=time && rem[j]>0 && in_queue[j]==0)
+                    {
+                        rr[rear]=j;
+                        rear++;
+                        in_queue[j]=1;
+                    }
+                }
+            }
+
+            if(rem[idx]==0)
+            {
+                completed++;
+                ct[idx]=time;
+                tat[idx]=ct[idx]-at[idx];
+                wt[idx]=tat[idx]-bt[idx];
+            }
+            else
+            {
+                rr[rear]=idx;
+                rear++;
+                in_queue[idx]=1;
+            }
+        }
+        else
+        {
+            int idx=-1;
+
+            for(int i=0;i<n;i++)
+            {
+                if(q[i]==2 && at[i]<=time && rem[i]>0)
+                {
+                    if(idx==-1 || at[i]<at[idx] || (at[i]==at[idx] && i<idx))
+                        idx=i;
+                }
+            }
+
+            if(idx==-1)
+            {
+                time++;
                 continue;
             }
-        }
 
-        if (current_process->started == 0) {
-            current_process->start_time = current_time;
-            current_process->started = 1;
-        }
+            if(started[idx]==0)
+            {
+                rt[idx]=time-at[idx];
+                started[idx]=1;
+            }
 
-        current_process->remaining_time--;
-        current_time++;
+            time++;
+            rem[idx]--;
 
-        if (current_process->remaining_time == 0) {
-            current_process->completion_time = current_time;
-            current_process->turnaround_time = current_process->completion_time - current_process->arrival_time;
-            current_process->waiting_time = current_process->turnaround_time - current_process->burst_time;
-            completed++;
-            current_process = NULL;
+            if(rem[idx]==0)
+            {
+                completed++;
+                ct[idx]=time;
+                tat[idx]=ct[idx]-at[idx];
+                wt[idx]=tat[idx]-bt[idx];
+            }
         }
     }
 
-    printf("\nID\tType\tAT\tBT\tCT\tWT\tTAT\n");
-    double total_wt = 0, total_tat = 0;
-    for (int j = 0; j < n; j++) {
-        printf("%d\t%s\t%d\t%d\t%d\t%d\t%d\n",
-               processes[j].process_id,
-               (processes[j].type == 0) ? "System" : "User",
-               processes[j].arrival_time,
-               processes[j].burst_time,
-               processes[j].completion_time,
-               processes[j].waiting_time,
-               processes[j].turnaround_time);
+    float avgwt=0,avgtat=0,avgrt=0;
 
-        total_wt += processes[j].waiting_time;
-        total_tat += processes[j].turnaround_time;
+    printf("\nMultilevel Queue Scheduling\n");
+    printf("Queue 1 : Round Robin\n");
+    printf("Queue 2 : FCFS\n\n");
+    printf("P\tQ\tAT\tBT\tCT\tTAT\tWT\tRT\n");
+
+    for(int i=0;i<n;i++)
+    {
+        avgwt+=wt[i];
+        avgtat+=tat[i];
+        avgrt+=rt[i];
+
+        printf("P%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n",i+1,q[i],at[i],bt[i],ct[i],tat[i],wt[i],rt[i]);
     }
 
-    printf("\nAverage Waiting Time: %.2f\n", total_wt / n);
-    printf("Average Turnaround Time: %.2f\n", total_tat / n);
+    printf("Average WT : %.2f\n",avgwt/n);
+    printf("Average TAT : %.2f\n",avgtat/n);
+    printf("Average RT : %.2f\n",avgrt/n);
+}
+
+int main()
+{
+    int n,tq;
+
+    printf("Enter number of processes: ");
+    scanf("%d",&n);
+
+    int at[n],bt[n],q[n];
+
+    for(int i=0;i<n;i++)
+    {
+        printf("\nProcess P%d\n",i+1);
+
+        printf("Arrival Time: ");
+        scanf("%d",&at[i]);
+
+        printf("Burst Time: ");
+        scanf("%d",&bt[i]);
+
+        printf("Queue number (1 for RR, 2 for FCFS): ");
+        scanf("%d",&q[i]);
+
+        if(q[i]!=1 && q[i]!=2)
+        {
+            printf("Invalid queue number\n");
+            return 0;
+        }
+    }
+
+    printf("Enter Time Quantum for Queue 1: ");
+    scanf("%d",&tq);
+
+    if(tq<=0)
+    {
+        printf("Invalid Time Quantum\n");
+        return 0;
+    }
+
+    multilevel_queue(n,at,bt,q,tq);
 
     return 0;
 }
