@@ -3,7 +3,7 @@
 void multilevel_queue(int n,int at[],int bt[],int q[],int tq)
 {
     int rem[n],ct[n],tat[n],wt[n],rt[n];
-    int started[n],in_queue[n],rr[1000];
+    int started[n],in_queue[n],queue[1000];
     int front=0,rear=0,time=0,completed=0;
 
     for(int i=0;i<n;i++)
@@ -19,62 +19,13 @@ void multilevel_queue(int n,int at[],int bt[],int q[],int tq)
         {
             if(q[i]==1 && at[i]<=time && rem[i]>0 && in_queue[i]==0)
             {
-                rr[rear]=i;
+                queue[rear]=i;
                 rear++;
                 in_queue[i]=1;
             }
         }
 
-        if(front<rear)
-        {
-            int idx=rr[front];
-            front++;
-            in_queue[idx]=0;
-
-            if(started[idx]==0)
-            {
-                rt[idx]=time-at[idx];
-                started[idx]=1;
-            }
-
-            int run;
-
-            if(rem[idx]>tq)
-                run=tq;
-            else
-                run=rem[idx];
-
-            for(int i=0;i<run;i++)
-            {
-                time++;
-                rem[idx]--;
-
-                for(int j=0;j<n;j++)
-                {
-                    if(j!=idx && q[j]==1 && at[j]<=time && rem[j]>0 && in_queue[j]==0)
-                    {
-                        rr[rear]=j;
-                        rear++;
-                        in_queue[j]=1;
-                    }
-                }
-            }
-
-            if(rem[idx]==0)
-            {
-                completed++;
-                ct[idx]=time;
-                tat[idx]=ct[idx]-at[idx];
-                wt[idx]=tat[idx]-bt[idx];
-            }
-            else
-            {
-                rr[rear]=idx;
-                rear++;
-                in_queue[idx]=1;
-            }
-        }
-        else
+        if(front==rear)
         {
             int idx=-1;
 
@@ -108,6 +59,57 @@ void multilevel_queue(int n,int at[],int bt[],int q[],int tq)
                 ct[idx]=time;
                 tat[idx]=ct[idx]-at[idx];
                 wt[idx]=tat[idx]-bt[idx];
+            }
+
+            continue;
+        }
+        else
+        {
+            int idx=queue[front];
+            front++;
+            in_queue[idx]=0;
+
+            if(started[idx]==0)
+            {
+                rt[idx]=time-at[idx];
+                started[idx]=1;
+            }
+
+            int run;
+
+            if(rem[idx]>tq)
+                run=tq;
+            else
+                run=rem[idx];
+
+            for(int i=0;i<run;i++)
+            {
+                time++;
+                rem[idx]--;
+
+                for(int j=0;j<n;j++)
+                {
+                    if(j!=idx && q[j]==1 && at[j]<=time && rem[j]>0 && in_queue[j]==0)
+                    {
+                        queue[rear]=j;
+                        rear++;
+                        in_queue[j]=1;
+                    }
+                }
+            }
+
+            if(rem[idx]==0)
+            {
+                completed++;
+                ct[idx]=time;
+                tat[idx]=ct[idx]-at[idx];
+                wt[idx]=tat[idx]-bt[idx];
+            }
+            else
+            {
+                queue[rear]=idx;
+                rear++;
+                in_queue[idx]=1;
             }
         }
     }

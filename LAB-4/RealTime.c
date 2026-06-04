@@ -49,6 +49,11 @@ void EDF(Process p[], int n) {
     printf("CPU Utilization: %.2f\n", utilization);
     printf("Schedulable: %s\n", (utilization <= 1.0) ? "YES" : "NO");
 
+    if(utilization > 1.0) {
+        printf("EDF scheduling cannot continue because tasks are not schedulable.\n");
+        return;
+    }
+
     int time = 0;
     printf("ID\tBT\tDL\tCT\tWT\tTAT\n");
 
@@ -78,6 +83,11 @@ void RMS(Process p[], int n) {
     printf("CPU Utilization: %.2f\n", utilization);
     printf("RM Bound: %.4f\n", bound);
     printf("Schedulable: %s\n", (utilization <= bound) ? "YES" : "NO");
+
+    if(utilization > bound) {
+        printf("RMS scheduling cannot continue because tasks are not schedulable.\n");
+        return;
+    }
 
     int time = 0;
     printf("ID\tBT\tPR\tCT\tWT\tTAT\n");
