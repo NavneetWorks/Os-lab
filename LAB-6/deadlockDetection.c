@@ -1,89 +1,69 @@
 #include <stdio.h>
+#include <stdbool.h>
 
 #define MAX 10
 
 void deadlock_detection(int n, int m, int Allocation[MAX][MAX], int Request[MAX][MAX], int Available[MAX]) {
-
     int Work[MAX];
-    int Finish[MAX];
-    int i, j, k;
+    bool Finish[MAX];
 
-    for(i = 0; i < m; i++)
-        Work[i] = Available[i];
+    for (int j = 0; j < m; j++)
+        Work[j] = Available[j];
 
-    for(i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++)
+        Finish[i] = false;
 
-        int allZero = 1;
+    int count = 0;
 
-        for(j = 0; j < m; j++) {
+    while (count < n) {
+        bool found = false;
 
-            if(Allocation[i][j] != 0) {
-                allZero = 0;
-                break;
+        for (int i = 0; i < n; i++) {
+            if (!Finish[i]) {
+                bool possible = true;
+
+                for (int j = 0; j < m; j++) {
+                    if (Request[i][j] > Work[j]) {
+                        possible = false;
+                        break;
+                    }
+                }
+
+                if (possible) {
+                    for (int j = 0; j < m; j++) {
+                        Work[j] += Allocation[i][j];
+                    }
+
+                    Finish[i] = true;
+                    found = true;
+                    count++;
+                }
             }
         }
 
-        if(allZero)
-            Finish[i] = 1;
-        else
-            Finish[i] = 0;
+        if (!found)
+            break;
     }
 
-    int found;
-
-    do {
-
-        found = 0;
-
-        for(i = 0; i < n; i++) {
-
-            if(Finish[i] == 0) {
-
-                for(j = 0; j < m; j++) {
-
-                    if(Request[i][j] > Work[j])
-                        break;
-                }
-
-                if(j == m) {
-
-                    for(k = 0; k < m; k++)
-                        Work[k] += Allocation[i][k];
-
-                    Finish[i] = 1;
-                    found = 1;
-                }
-            }
-        }
-
-    } while(found);
-
-    int deadlock = 0;
+    bool deadlock = false;
 
     printf("\nDeadlocked Processes:\n");
 
-    for(i = 0; i < n; i++) {
-
-        if(Finish[i] == 0) {
-
+    for (int i = 0; i < n; i++) {
+        if (!Finish[i]) {
             printf("P%d\n", i);
-            deadlock = 1;
+            deadlock = true;
         }
     }
 
-    if(deadlock == 0)
+    if (!deadlock)
         printf("No Deadlock Detected\n");
 }
 
 int main() {
-
     int n, m;
-
-    int Allocation[MAX][MAX];
-    int Request[MAX][MAX];
+    int Allocation[MAX][MAX], Request[MAX][MAX];
     int Available[MAX];
-
-    int i, j;
 
     printf("Enter Number of Processes: ");
     scanf("%d", &n);
@@ -92,25 +72,22 @@ int main() {
     scanf("%d", &m);
 
     printf("\nEnter Allocation Matrix:\n");
-
-    for(i = 0; i < n; i++) {
-        for(j = 0; j < m; j++) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < m; j++) {
             scanf("%d", &Allocation[i][j]);
         }
     }
 
     printf("\nEnter Request Matrix:\n");
-
-    for(i = 0; i < n; i++) {
-        for(j = 0; j < m; j++) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < m; j++) {
             scanf("%d", &Request[i][j]);
         }
     }
 
     printf("\nEnter Available Resources:\n");
-
-    for(i = 0; i < m; i++) {
-        scanf("%d", &Available[i]);
+    for (int j = 0; j < m; j++) {
+        scanf("%d", &Available[j]);
     }
 
     deadlock_detection(n, m, Allocation, Request, Available);
