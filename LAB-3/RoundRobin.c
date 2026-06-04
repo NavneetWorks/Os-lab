@@ -1,96 +1,133 @@
-#include <stdio.h>
+#include<stdio.h>
 
-void roundRobin(int n, int at[], int bt[], int tq) {
-    int rt[n], ct[n], wt[n], tat[n], resp[n];
+void round_robin(int n,int at[],int bt[],int tq)
+{
+    int rem[n],ct[n],tat[n],wt[n],rt[n];
+    int started[n],in_queue[n],queue[1000];
+    int front=0,rear=0,time=0,completed=0;
 
-    for (int i = 0; i < n; i++) {
-        rt[i] = bt[i];
-        resp[i] = -1;
+    for(int i=0;i<n;i++)
+    {
+        rem[i]=bt[i];
+        started[i]=0;
+        in_queue[i]=0;
     }
 
-    int time = 0, completed = 0;
+    while(completed<n)
+    {
+        for(int i=0;i<n;i++)
+        {
+            if(at[i]<=time && rem[i]>0 && in_queue[i]==0)
+            {
+                queue[rear]=i;
+                rear++;
+                in_queue[i]=1;
+            }
+        }
 
-    while (completed < n) {
-        int idle = 1;
+        if(front==rear)
+        {
+            time++;
+            continue;
+        }
 
-        for (int i = 0; i < n; i++) {
-            if (at[i] <= time && rt[i] > 0) {
-                idle = 0;
+        int idx=queue[front];
+        front++;
+        in_queue[idx]=0;
 
-                if (resp[i] == -1) {
-                    resp[i] = time - at[i];
-                }
+        if(started[idx]==0)
+        {
+            rt[idx]=time-at[idx];
+            started[idx]=1;
+        }
 
-                if (rt[i] > tq) {
-                    time += tq;
-                    rt[i] -= tq;
-                } else {
-                    time += rt[i];
-                    ct[i] = time;
-                    rt[i] = 0;
-                    completed++;
+        int run;
+
+        if(rem[idx]>tq)
+            run=tq;
+        else
+            run=rem[idx];
+
+        for(int i=0;i<run;i++)
+        {
+            time++;
+            rem[idx]--;
+
+            for(int j=0;j<n;j++)
+            {
+                if(j!=idx && at[j]<=time && rem[j]>0 && in_queue[j]==0)
+                {
+                    queue[rear]=j;
+                    rear++;
+                    in_queue[j]=1;
                 }
             }
         }
 
-        if (idle) {
-            time++;
+        if(rem[idx]==0)
+        {
+            completed++;
+            ct[idx]=time;
+            tat[idx]=ct[idx]-at[idx];
+            wt[idx]=tat[idx]-bt[idx];
+        }
+        else
+        {
+            queue[rear]=idx;
+            rear++;
+            in_queue[idx]=1;
         }
     }
 
-    float total_wt = 0, total_tat = 0, total_rt = 0;
+    float avgwt=0,avgtat=0,avgrt=0;
 
-    for (int i = 0; i < n; i++) {
-        tat[i] = ct[i] - at[i];
-        wt[i] = tat[i] - bt[i];
+    printf("\nRound Robin Scheduling\n");
+    printf("P\tAT\tBT\tCT\tTAT\tWT\tRT\n");
 
-        total_wt += wt[i];
-        total_tat += tat[i];
-        total_rt += resp[i];
+    for(int i=0;i<n;i++)
+    {
+        avgwt+=wt[i];
+        avgtat+=tat[i];
+        avgrt+=rt[i];
+
+        printf("P%d\t%d\t%d\t%d\t%d\t%d\t%d\n",i+1,at[i],bt[i],ct[i],tat[i],wt[i],rt[i]);
     }
 
-    printf("\nTime Quantum = %d\n", tq);
-    printf("Process\tAT\tBT\tCT\tWT\tTAT\tRT\n");
-
-    for (int i = 0; i < n; i++) {
-        printf("P%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
-               i + 1, at[i], bt[i], ct[i], wt[i], tat[i], resp[i]);
-    }
-
-    printf("Average WT = %.2f\n", total_wt / n);
-    printf("Average TAT = %.2f\n", total_tat / n);
-    printf("Average RT = %.2f\n", total_rt / n);
+    printf("Average WT : %.2f\n",avgwt/n);
+    printf("Average TAT : %.2f\n",avgtat/n);
+    printf("Average RT : %.2f\n",avgrt/n);
 }
 
-int main() {
-    int n;
+int main()
+{
+    int n,tq;
 
     printf("Enter number of processes: ");
-    scanf("%d", &n);
+    scanf("%d",&n);
 
-    int at[n], bt[n];
+    int at[n],bt[n];
 
-    for (int i = 0; i < n; i++) {
-        printf("\nProcess P%d\n", i + 1);
+    for(int i=0;i<n;i++)
+    {
+        printf("\nProcess P%d\n",i+1);
 
         printf("Arrival Time: ");
-        scanf("%d", &at[i]);
+        scanf("%d",&at[i]);
 
         printf("Burst Time: ");
-        scanf("%d", &bt[i]);
+        scanf("%d",&bt[i]);
     }
 
-    int num_q, tq;
+    printf("Enter Time Quantum: ");
+    scanf("%d",&tq);
 
-    printf("\nEnter number of different Time Quantums: ");
-    scanf("%d", &num_q);
-
-    for (int i = 0; i < num_q; i++) {
-        printf("\nEnter Time Quantum %d: ", i + 1);
-        scanf("%d", &tq);
-
-        roundRobin(n, at, bt, tq);
+    if(tq<=0)
+    {
+        printf("Invalid Time Quantum\n");
+        return 0;
     }
+
+    round_robin(n,at,bt,tq);
 
     return 0;
 }
